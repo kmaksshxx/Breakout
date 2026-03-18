@@ -6,12 +6,14 @@ import random
 from torch.optim import AdamW
 from src.models import *
 from src.buffer import *
+import ale_py
 
 
 ROOT = Path(__file__).resolve().parents[2]
 saved_path = ROOT / 'checkpoint' / 'checkpoint.tar'
 
 if __name__ == "__main__":
+    gym.register_envs(ale_py)
     env = gym.make('ALE/Breakout-ram-v5', mode=0, difficulty=0)
 
     q = QNetwork().to(device)
