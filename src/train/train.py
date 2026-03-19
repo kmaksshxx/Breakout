@@ -7,6 +7,8 @@ from torch.optim import AdamW
 from src.models import *
 from src.buffer import *
 import ale_py
+from collections import deque
+import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,38 +18,55 @@ if __name__ == "__main__":
     gym.register_envs(ale_py)
     env = gym.make('ALE/Breakout-ram-v5', mode=0, difficulty=0)
 
+    print(f'Device: {device}')
     q = QNetwork().to(device)
     q_target = QNetwork().to(device)
     optimizer = AdamW(q.parameters())
+    buffer = ReplayBuffer()
+
+    epsilon = 1.0
+    best_reward = 0
 
     try:
-        checkpoint = torch.load(saved_path, weights_only=True)
+        if device == 'cpu':
+            checkpoint = torch.load(saved_path, weights_only=False, map_location='cpu')
+        else:
+            checkpoint = torch.load(saved_path, weights_only=False)
         q.load_state_dict(checkpoint['model'])
         q_target.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+        buffer.buffer = checkpoint['buffer']
+        epsilon = checkpoint['epsilon']
+        best_reward = checkpoint['best_reward']
         print('Checkpoint Loaded')
     except Exception as e:
+        print(e)
         print('Checkpoint Not Loaded')
-
-    buffer = ReplayBuffer()
 
     gamma = 0.99
     batch_size = 64
 
-    epsilon = 1.0
+    epsilon_max = 1.0
     epsilon_min = 0.05
-    epsilon_decay = 0.995
+    random_episodes = 1000
 
-    target_update = 200
+    target_update = 10000
+
+    print_episode = 100
 
     step = 0
-    best_reward = 0
 
-    for episode in range(100_000):
+    episode = 0
+
+    reward_history = deque(maxlen=print_episode)
+
+    while True:
+        episode += 1
         s, _ = env.reset(seed=42)
         done = False
-        total_reward = 0
+        episode_reward = 0
 
+        # Start One Episode
         while not done:
             if random.random() < epsilon:
                 a = env.action_space.sample()
@@ -62,7 +81,7 @@ if __name__ == "__main__":
             buffer.push(s, a, r, s2, done)
 
             s = s2
-            total_reward += r
+            episode_reward += r
             step += 1
 
             if len(buffer) > batch_size:
@@ -77,7 +96,7 @@ if __name__ == "__main__":
                     next_q = q_target(next_states).max(1)[0]
                     target = rewards + gamma * next_q * (1 - dones)
 
-                loss = nn.functional.mse_loss(q_values, target)
+                loss = nn.functional.huber_loss(q_values, target)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -86,19 +105,23 @@ if __name__ == "__main__":
             if step % target_update == 0:
                 q_target.load_state_dict(q.state_dict())
 
-        epsilon = max(epsilon * epsilon_decay, epsilon_min)
+        reward_history.append(int(episode_reward))
+        mean_reward = np.mean(reward_history)
 
-        if total_reward >= best_reward:
-            print('new best score')
-            best_reward = total_reward
+        epsilon = max(epsilon - (epsilon_max - epsilon_min) / random_episodes, epsilon_min)
 
-            torch.save({
-                'model': q.state_dict(),
-                'optimizer': optimizer.state_dict()
-            }, saved_path)
+        if mean_reward >= best_reward:
+            best_reward = episode_reward
 
-        if total_reward >= 40:
+        if mean_reward >= 40:
             break
 
-        if episode % 100 == 0 and episode > 0:
-            print(f"Episode: {episode} | score: {int(total_reward)} | Best Score: {int(best_reward)}")
+        if episode % print_episode == 0:
+            print(f"Episode: {episode} | reward: {mean_reward:.2f} | Best Score: {best_reward:.2f}")
+            torch.save({
+                'model': q.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'buffer': buffer.buffer,
+                'epsilon': epsilon,
+                'best_reward': best_reward
+            }, saved_path)
