@@ -9,11 +9,8 @@ from src.buffer import *
 import ale_py
 from collections import deque
 import numpy as np
-<<<<<<< HEAD
-
-=======
 import time
->>>>>>> c28bc25 (edit checkpoint)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 saved_path = ROOT / 'checkpoint' / 'checkpoint.tar'
@@ -24,51 +21,27 @@ if __name__ == "__main__":
 
     print(f'Device: {device}')
     q = QNetwork().to(device)
-<<<<<<< HEAD
-    q_target = QNetwork().to(device)
-    optimizer = AdamW(q.parameters())
-    buffer = ReplayBuffer()
-
-    epsilon = 1.0
-    best_reward = 0
-=======
     q.eval()
     q_target = QNetwork().to(device)
     optimizer = AdamW(q.parameters())
->>>>>>> c28bc25 (edit checkpoint)
 
     try:
         if device == 'cpu':
             checkpoint = torch.load(saved_path, weights_only=False, map_location='cpu')
         else:
             checkpoint = torch.load(saved_path, weights_only=False)
-<<<<<<< HEAD
-        q.load_state_dict(checkpoint['model'])
-        q_target.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        buffer.buffer = checkpoint['buffer']
-=======
 
         buffer = ReplayBuffer.load_state(checkpoint['state'])
         q.load_state_dict(checkpoint['model'])
         q_target.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
->>>>>>> c28bc25 (edit checkpoint)
         epsilon = checkpoint['epsilon']
         best_reward = checkpoint['best_reward']
         print('Checkpoint Loaded')
     except Exception as e:
         print(e)
         print('Checkpoint Not Loaded')
-<<<<<<< HEAD
 
-    gamma = 0.99
-    batch_size = 64
-
-    epsilon_max = 1.0
-    epsilon_min = 0.05
-    random_episodes = 1000
-=======
         buffer = ReplayBuffer()
         epsilon = 1.0
         best_reward = 0
@@ -76,26 +49,15 @@ if __name__ == "__main__":
     gamma = 0.99
     batch_size = 64
     epsilon_max, epsilon_min, random_episodes = 1.0, 0.05, 1000
->>>>>>> c28bc25 (edit checkpoint)
 
     target_update = 10000
 
     print_episode = 100
-<<<<<<< HEAD
-
-    step = 0
-
-    episode = 0
-
-    reward_history = deque(maxlen=print_episode)
-
-=======
     reward_history = deque(maxlen=print_episode)
 
     episode, step = 0, 0
     now = time.time()
 
->>>>>>> c28bc25 (edit checkpoint)
     while True:
         episode += 1
         s, _ = env.reset(seed=42)
@@ -153,13 +115,6 @@ if __name__ == "__main__":
             break
 
         if episode % print_episode == 0:
-<<<<<<< HEAD
-            print(f"Episode: {episode} | reward: {mean_reward:.2f} | Best Score: {best_reward:.2f}")
-            torch.save({
-                'model': q.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'buffer': buffer.buffer,
-=======
             runtime = int(time.time() - now)
             now = time.time()
             m, s = divmod(runtime, 60)
@@ -176,7 +131,6 @@ if __name__ == "__main__":
                 'model': q.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'state': buffer.state(),
->>>>>>> c28bc25 (edit checkpoint)
                 'epsilon': epsilon,
                 'best_reward': best_reward
             }, saved_path)

@@ -1,29 +1,11 @@
 import torch
-<<<<<<< HEAD
-import random
 import numpy as np
-from collections import deque
-=======
-import numpy as np
-
->>>>>>> c28bc25 (edit checkpoint)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class ReplayBuffer:
     def __init__(self, capacity=100_000):
-<<<<<<< HEAD
-        self.buffer = deque(maxlen=capacity)
-
-    def push(self, s, a, r, s2, d):
-        self.buffer.append((s, a, r, s2, d))
-
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-
-        s, a, r, s2, d = map(np.array, zip(*batch))
-=======
         self.state_buffer = np.empty((capacity, 128), dtype=np.float32)
         self.action_buffer = np.empty(capacity, dtype=np.int32)
         self.reward_buffer = np.empty(capacity, dtype=np.float32)
@@ -74,7 +56,6 @@ class ReplayBuffer:
             [self.state_buffer, self.action_buffer, self.reward_buffer,
              self.state_next_buffer, self.done_buffer]
         )
->>>>>>> c28bc25 (edit checkpoint)
 
         return (
             torch.tensor(s, dtype=torch.float32, device=device),
@@ -85,8 +66,4 @@ class ReplayBuffer:
         )
 
     def __len__(self):
-<<<<<<< HEAD
-        return len(self.buffer)
-=======
         return min(self.capacity, self.pointer)
->>>>>>> c28bc25 (edit checkpoint)
