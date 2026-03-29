@@ -11,8 +11,11 @@ import numpy as np
 from src.measure_time import *
 import hydra
 from omegaconf import DictConfig
+from pathlib import Path
 
-saved_path = "../../checkpoint/checkpoint.tar"
+ROOT = Path(__file__).resolve().parents[2]
+
+saved_path = ROOT / "checkpoint" / "checkpoint.tar"
 gym.register_envs(ale_py)
 env = gym.make('ALE/Breakout-v5', obs_type='ram')
 epsilon_max, epsilon_min = 1.0, 0.05
