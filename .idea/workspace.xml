@@ -4,7 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4daa7d0c-83a4-42e8-9dfc-5b515c42a37e" name="Changes" comment="edit checkpoint" />
+    <list default="true" id="4daa7d0c-83a4-42e8-9dfc-5b515c42a37e" name="Changes" comment="edit gitignore">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Breakout.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/buffer/buffer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/buffer/buffer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/measure_time/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/measure_time/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/train/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/train/train.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -98,7 +107,21 @@
       <option name="project" value="LOCAL" />
       <updated>1774191959303</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="edit checkpoint">
+      <created>1774194080216</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1774194080216</updated>
+    </task>
+    <task id="LOCAL-00009" summary="edit gitignore">
+      <created>1774195221734</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1774195221734</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -120,6 +143,7 @@
     <MESSAGE value="edit buffer" />
     <MESSAGE value="train a little bit" />
     <MESSAGE value="edit checkpoint" />
-    <option name="LAST_COMMIT_MESSAGE" value="edit checkpoint" />
+    <MESSAGE value="edit gitignore" />
+    <option name="LAST_COMMIT_MESSAGE" value="edit gitignore" />
   </component>
 </project>

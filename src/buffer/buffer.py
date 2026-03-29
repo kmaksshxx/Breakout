@@ -15,7 +15,7 @@ class ReplayBuffer:
         self.capacity = capacity
         self.pointer = 0
 
-    def state(self):
+    def state_dict(self):
         return (
             self.capacity,
             self.pointer,
@@ -49,7 +49,7 @@ class ReplayBuffer:
         self.pointer += 1
 
     def sample(self, batch_size):
-        idx = np.random.choice(self.__len__(), batch_size)
+        idx = np.random.choice(len(self), batch_size)
 
         s, a, r, s2, d = map(
             lambda x: x[idx],
@@ -58,11 +58,11 @@ class ReplayBuffer:
         )
 
         return (
-            torch.tensor(s, dtype=torch.float32, device=device),
-            torch.tensor(a, dtype=torch.long, device=device),
-            torch.tensor(r, dtype=torch.float32, device=device),
-            torch.tensor(s2, dtype=torch.float32, device=device),
-            torch.tensor(d, dtype=torch.float32, device=device)
+            torch.from_numpy(s).to(torch.float32).to(device),
+            torch.from_numpy(a).to(torch.int64).to(device),
+            torch.from_numpy(r).to(torch.float32).to(device),
+            torch.from_numpy(s2).to(torch.float32).to(device),
+            torch.from_numpy(d).to(torch.float32).to(device),
         )
 
     def __len__(self):
