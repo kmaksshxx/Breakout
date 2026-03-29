@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 f"Ep: {episode} |",
                 f"Reward: {mean_reward:.2f} |",
                 f"eps: {epsilon:.2f} |",
-                f"loss: {np.mean(loss_history):.2f} |"
+                f"loss: {np.mean(loss_history):.4f} |"
                 f"Run Time: {m}m {s}s"
             )
 
