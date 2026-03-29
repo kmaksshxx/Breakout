@@ -1,0 +1,6 @@
+batch_size: 128
+gamma: 0.99
+print_timer: True
+lr: 3e-4
+capacity: 100000
+print_episode: 100

@@ -1,5 +1,4 @@
 import gymnasium as gym
-from pathlib import Path
 import torch
 import torch.nn as nn
 import random
@@ -9,27 +8,23 @@ from src.buffer import *
 import ale_py
 from collections import deque
 import numpy as np
-import time
 from src.measure_time import *
+import hydra
+from omegaconf import DictConfig
 
-ROOT = Path(__file__).resolve().parents[2]
-saved_path = ROOT / 'checkpoint' / 'checkpoint.tar'
+saved_path = "../../checkpoint/checkpoint.tar"
 gym.register_envs(ale_py)
 env = gym.make('ALE/Breakout-v5', obs_type='ram')
-
-
-replay_buffer_capacity = 100_000
-gamma = 0.99
-batch_size = 64
 epsilon_max, epsilon_min = 1.0, 0.05
 
 
-if __name__ == "__main__":
+@hydra.main(config_path="../../configs", config_name="config", version_base=None)
+def main(cfg: DictConfig):
     print(f'Device: {device}')
     q = QNetwork().to(device)
     q_target = QNetwork().to(device)
-    optimizer = AdamW(q.parameters(), lr=3e-4)
-    buffer = ReplayBuffer(replay_buffer_capacity)
+    optimizer = AdamW(q.parameters(), lr=cfg.lr)
+    buffer = ReplayBuffer(cfg.capacity)
 
     try:
         if device == 'cpu':
@@ -55,16 +50,14 @@ if __name__ == "__main__":
 
     target_update = 1000
 
-    print_episode = 100
-    reward_history = deque(maxlen=print_episode)
-    loss_history = deque(maxlen=print_episode)
+    reward_history = deque(maxlen=cfg.print_episode)
+    loss_history = deque(maxlen=cfg.print_episode)
     loss_episode_history = deque()
-
-    now = time.time()
+    timer.reset(f"episode: {episode}")
 
     while True:
         episode += 1
-        epsilon = max(epsilon - (epsilon_max - epsilon_min) / replay_buffer_capacity, epsilon_min)
+        epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.capacity, epsilon_min)
         s, _ = env.reset(seed=42)
         done = False
         episode_reward = 0
@@ -89,16 +82,16 @@ if __name__ == "__main__":
             episode_reward += r
             step += 1
 
-            if len(buffer) > batch_size:
+            if len(buffer) > cfg.batch_size:
                 with timed(timer, "sample"):
-                    states, actions, rewards, next_states, dones = buffer.sample(batch_size)
+                    states, actions, rewards, next_states, dones = buffer.sample(cfg.batch_size)
 
                 with timed(timer, "tran_step"):
                     q_values = q(states).gather(1, actions.unsqueeze(1)).squeeze()  # (B, )
 
                     with torch.no_grad():
                         next_q = q_target(next_states).max(1)[0]
-                        target = rewards + gamma * next_q * (1 - dones)
+                        target = rewards + cfg.gamma * next_q * (1 - dones)
 
                     loss = nn.functional.huber_loss(q_values, target)
                     loss_episode_history.append(loss.item())
@@ -123,19 +116,7 @@ if __name__ == "__main__":
         if mean_reward >= 40:
             break
 
-        if episode % print_episode == 0:
-            runtime = int(time.time() - now)
-            now = time.time()
-            m, s = divmod(runtime, 60)
-
-            print(
-                f"Ep: {episode} |",
-                f"Reward: {mean_reward:.2f} |",
-                f"eps: {epsilon:.2f} |",
-                f"loss: {np.mean(loss_history):.4f} |"
-                f"Run Time: {m}m {s}s"
-            )
-
+        if episode % cfg.print_episode == 0:
             with timed(timer, "save"):
                 torch.save({
                     'model': q.state_dict(),
@@ -146,5 +127,17 @@ if __name__ == "__main__":
                     'step': step
                 }, saved_path)
 
-            timer.report()
-            breakpoint()
+            print(
+                f"Ep: {episode} |",
+                f"Reward: {mean_reward:.2f} |",
+                f"eps: {epsilon:.2f} |",
+                f"loss: {np.mean(loss_history):.4f} |"
+            )
+
+            if cfg.print_timer:
+                timer.report()
+                timer.reset(f"episode: {episode}")
+
+
+if __name__ == "__main__":
+    main()
