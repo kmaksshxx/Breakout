@@ -5,11 +5,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class ReplayBuffer:
-    def __init__(self, capacity=100_000):
-        self.state_buffer = np.empty((capacity, 128), dtype=np.float32)
+    def __init__(self, capacity):
+        self.state_buffer = np.empty((capacity, 512), dtype=np.float32)
         self.action_buffer = np.empty(capacity, dtype=np.int32)
         self.reward_buffer = np.empty(capacity, dtype=np.float32)
-        self.state_next_buffer = np.empty((capacity, 128), dtype=np.float32)
+        self.state_next_buffer = np.empty((capacity, 512), dtype=np.float32)
         self.done_buffer = np.empty(capacity, dtype=np.float32)
 
         self.capacity = capacity

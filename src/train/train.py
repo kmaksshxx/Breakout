@@ -19,6 +19,20 @@ saved_path = ROOT / "checkpoint" / "checkpoint.tar"
 gym.register_envs(ale_py)
 env = gym.make('ALE/Breakout-v5', obs_type='ram')
 epsilon_max, epsilon_min = 1.0, 0.05
+frame_stack = deque(maxlen=4)
+
+
+def env_reset():
+    s, _ = env.reset(seed=42)
+    for _ in range(4):
+        frame_stack.append(s)
+    return np.concatenate(frame_stack)
+
+
+def env_step(a):
+    s, r, d1, d2, _ = env.step(a)
+    frame_stack.append(s)
+    return np.concatenate(frame_stack), r, float(d1 or d2)
 
 
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
@@ -56,12 +70,14 @@ def main(cfg: DictConfig):
     reward_history = deque(maxlen=cfg.print_episode)
     loss_history = deque(maxlen=cfg.print_episode)
     loss_episode_history = deque()
-    timer.reset(f"episode: {episode}")
+    timer.reset(f"episode: {episode + cfg.print_episode}")
+
+    epsilon = 1.0
 
     while True:
         episode += 1
-        epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.capacity, epsilon_min)
-        s, _ = env.reset(seed=42)
+        epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.random_steps, epsilon_min)
+        s = env_reset()
         done = False
         episode_reward = 0
 
@@ -76,8 +92,7 @@ def main(cfg: DictConfig):
                         qs = q(torch.tensor(s, dtype=torch.float32, device=device))
                         a = qs.argmax().item()
 
-            s2, r, terminated, truncated, _ = env.step(a)
-            done = terminated or truncated
+            s2, r, done = env_step(a)
 
             buffer.push(s, a, r, s2, done)
 
@@ -131,15 +146,15 @@ def main(cfg: DictConfig):
                 }, saved_path)
 
             print(
-                f"Ep: {episode} |",
+                f"\nEp: {episode} |",
                 f"Reward: {mean_reward:.2f} |",
                 f"eps: {epsilon:.2f} |",
-                f"loss: {np.mean(loss_history):.4f} |"
+                f"loss: {np.mean(loss_history):.4f}\n"
             )
 
             if cfg.print_timer:
                 timer.report()
-                timer.reset(f"episode: {episode}")
+                timer.reset(f"episode: {episode + cfg.print_episode}")
 
 
 if __name__ == "__main__":
