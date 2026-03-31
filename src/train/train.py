@@ -52,37 +52,37 @@ def main(cfg: DictConfig):
         q.load_state_dict(checkpoint['model'])
         q_target.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        epsilon = checkpoint['epsilon']
+
         best_reward = checkpoint['best_reward']
         episode = checkpoint['episode']
         step = checkpoint['step']
         print('Checkpoint Loaded')
+
     except Exception as e:
         print(e)
         print('Checkpoint Not Loaded')
 
-        epsilon = 1.0
         best_reward = 0
         episode, step = 0, 0
 
-    target_update = 1000
+    epsilon = cfg.epsilon
+    target_update = cfg.target_update
 
     reward_history = deque(maxlen=cfg.print_episode)
     loss_history = deque(maxlen=cfg.print_episode)
     loss_episode_history = deque()
     timer.reset(f"episode: {episode + cfg.print_episode}")
 
-    epsilon = 1.0
-
     while True:
         episode += 1
-        epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.random_steps, epsilon_min)
         s = env_reset()
         done = False
         episode_reward = 0
 
         # Start One Episode
         while not done:
+            epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.random_steps, epsilon_min)
+
             if random.random() < epsilon:
                 with timed(timer, "select_random_action"):
                     a = env.action_space.sample()
@@ -139,7 +139,6 @@ def main(cfg: DictConfig):
                 torch.save({
                     'model': q.state_dict(),
                     'optimizer': optimizer.state_dict(),
-                    'epsilon': epsilon,
                     'best_reward': best_reward,
                     'episode': episode,
                     'step': step

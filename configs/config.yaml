@@ -4,4 +4,6 @@ print_timer: True
 lr: 3e-4
 capacity: 100_000
 print_episode: 100
-random_steps: 100_000
+random_steps: 1_000_000
+epsilon: 1.0
+target_update: 1000
