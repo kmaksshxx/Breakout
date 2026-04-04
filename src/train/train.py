@@ -20,19 +20,32 @@ gym.register_envs(ale_py)
 env = gym.make('ALE/Breakout-v5', obs_type='ram')
 epsilon_max, epsilon_min = 1.0, 0.05
 frame_stack = deque(maxlen=4)
+seed = 42
 
 
-def env_reset():
-    s, _ = env.reset(seed=42)
+def env_reset(seed):
+    s, _ = env.reset(seed=seed)
     for _ in range(4):
         frame_stack.append(s)
     return np.concatenate(frame_stack)
 
 
-def env_step(a):
-    s, r, d1, d2, _ = env.step(a)
+def env_step(a: int, life: int):
+    """
+    :return: state, reward, done, lives
+    """
+    s, r, _, _, info = env.step(a)
     frame_stack.append(s)
-    return np.concatenate(frame_stack), r, float(d1 or d2)
+    return np.concatenate(frame_stack), r, life > info['lives'], info['lives']
+
+
+def load_checkpoint():
+    if device == 'cpu':
+        checkpoint = torch.load(saved_path, weights_only=False, map_location='cpu')
+    else:
+        checkpoint = torch.load(saved_path, weights_only=False)
+
+    return checkpoint
 
 
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
@@ -44,11 +57,7 @@ def main(cfg: DictConfig):
     buffer = ReplayBuffer(cfg.capacity)
 
     try:
-        if device == 'cpu':
-            checkpoint = torch.load(saved_path, weights_only=False, map_location='cpu')
-        else:
-            checkpoint = torch.load(saved_path, weights_only=False)
-
+        checkpoint = load_checkpoint()
         q.load_state_dict(checkpoint['model'])
         q_target.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
@@ -75,9 +84,10 @@ def main(cfg: DictConfig):
 
     while True:
         episode += 1
-        s = env_reset()
+        s = env_reset(seed)
         done = False
         episode_reward = 0
+        life = 5
 
         # Start One Episode
         while not done:
@@ -92,7 +102,7 @@ def main(cfg: DictConfig):
                         qs = q(torch.tensor(s, dtype=torch.float32, device=device))
                         a = qs.argmax().item()
 
-            s2, r, done = env_step(a)
+            s2, r, done, life = env_step(a, life)
 
             buffer.push(s, a, r, s2, done)
 
