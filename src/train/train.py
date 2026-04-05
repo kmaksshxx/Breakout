@@ -1,6 +1,6 @@
 import gymnasium as gym
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 import random
 from torch.optim import AdamW
 from src.models import *
@@ -36,7 +36,8 @@ def env_step(a: int, life: int):
     """
     s, r, _, _, info = env.step(a)
     frame_stack.append(s)
-    return np.concatenate(frame_stack), r, life > info['lives'], info['lives']
+    new_life = int(info['lives'])
+    return np.concatenate(frame_stack), r, new_life < life, new_life
 
 
 def load_checkpoint():
@@ -85,12 +86,11 @@ def main(cfg: DictConfig):
     while True:
         episode += 1
         s = env_reset(seed)
-        done = False
         episode_reward = 0
         life = 5
 
         # Start One Episode
-        while not done:
+        while True:
             epsilon = max(epsilon - (epsilon_max - epsilon_min) / cfg.random_steps, epsilon_min)
 
             if random.random() < epsilon:
@@ -110,6 +110,7 @@ def main(cfg: DictConfig):
             episode_reward += r
             step += 1
 
+            # train step
             if len(buffer) > cfg.batch_size:
                 with timed(timer, "sample"):
                     states, actions, rewards, next_states, dones = buffer.sample(cfg.batch_size)
@@ -121,7 +122,7 @@ def main(cfg: DictConfig):
                         next_q = q_target(next_states).max(1)[0]
                         target = rewards + cfg.gamma * next_q * (1 - dones)
 
-                    loss = nn.functional.huber_loss(q_values, target)
+                    loss = F.huber_loss(q_values, target)
                     loss_episode_history.append(loss.item())
 
                     optimizer.zero_grad()
@@ -134,6 +135,9 @@ def main(cfg: DictConfig):
                 loss_history.append(loss_episode_mean)
                 loss_episode_history.clear()
 
+            if life == 0:
+                break
+
         reward_history.append(int(episode_reward))
         mean_reward = np.mean(reward_history)
 
@@ -141,7 +145,7 @@ def main(cfg: DictConfig):
             best_reward = episode_reward
             print(f"New Best Score: {best_reward:.2f}")
 
-        if mean_reward >= 40:
+        if mean_reward >= cfg.goal:
             break
 
         if episode % cfg.print_episode == 0:
